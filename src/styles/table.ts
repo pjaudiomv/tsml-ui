@@ -173,3 +173,18 @@ export const tableWrapperCss = css`
   margin: 0 ${size.gutter * -1}px ${size.gutter * -1}px;
   width: calc(100% + ${size.gutter * 2}px);
 `;
+
+export const tableChevronCss = css`
+  display: inline-block;
+  width: 0;
+  height: 0;
+  margin-left: 4px;
+  vertical-align: middle;
+  border-left: 0.4em solid transparent;
+  border-right: 0.4em solid transparent;
+  border-top: 0.4em solid ${color.dark};
+  transition: transform 0.2s;
+  &.down {
+    transform: rotate(180deg);
+  }
+`;
