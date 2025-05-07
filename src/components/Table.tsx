@@ -17,11 +17,11 @@ import Icon, { icons } from './Icon';
 import Link from './Link';
 
 export default function Table({
-  filteredSlugs = [],
-  inProgress = [],
-  setState,
-  state,
-}: {
+                                filteredSlugs = [],
+                                inProgress = [],
+                                setState,
+                                state,
+                              }: {
   filteredSlugs: string[];
   inProgress: string[];
   setState: Dispatch<SetStateAction<State>>;
@@ -44,7 +44,7 @@ export default function Table({
   const { distance, location, region } = state.capabilities;
   const [sortColumn, setSortColumn] = useState<string | undefined>();
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
-  const sortableColumns = ['address', 'distance', 'location_group', 'name',  'region', 'time'];
+  const sortableColumns = ['time', 'name', 'location_group', 'address', 'region', 'distance'];
   const sortedSlugs = useMemo(() => {
     if (!sortColumn || !sortableColumns.includes(sortColumn)) return filteredSlugs;
     const compare = (aSlug: string, bSlug: string) => {
@@ -57,9 +57,9 @@ export default function Table({
           if (!a.start && !b.start) return 0;
           if (!a.start) return 1;
           if (!b.start) return -1;
-          // Primary: weekday (asc/desc), Secondary: time (always asc)
-          const aDay = a.start.weekday;
-          const bDay = b.start.weekday;
+          // Map ISO to 0=Sun,1=Mon..
+          const aDay = a.start.weekday === 7 ? 0 : a.start.weekday;
+          const bDay = b.start.weekday === 7 ? 0 : b.start.weekday;
           if (aDay !== bDay) {
             return sortDirection === 'asc' ? aDay - bDay : bDay - aDay;
           }
@@ -206,56 +206,56 @@ export default function Table({
     <div css={tableWrapperCss}>
       <table>
         <thead>
-          <tr>
-            {columns.map((column, index) => {
-              const isSortable = sortableColumns.includes(column);
-              const isActive = sortColumn === column;
-              return (
-                <th
-                  key={index}
-                  style={isSortable ? { cursor: 'pointer', userSelect: 'none' } : {}}
-                  onClick={
-                    isSortable
-                      ? () => {
-                        if (sortColumn === column) {
-                          setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
-                        } else {
-                          setSortColumn(column);
-                          setSortDirection('asc');
-                        }
+        <tr>
+          {columns.map((column, index) => {
+            const isSortable = sortableColumns.includes(column);
+            const isActive = sortColumn === column;
+            return (
+              <th
+                key={index}
+                style={isSortable ? { cursor: 'pointer', userSelect: 'none' } : {}}
+                onClick={
+                  isSortable
+                    ? () => {
+                      if (sortColumn === column) {
+                        setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
+                      } else {
+                        setSortColumn(column);
+                        setSortDirection('asc');
                       }
-                      : undefined
-                  }
-                >
-                  {strings[column as keyof Translation] as string}
-                  {isActive && (
-                    <span
-                      css={tableChevronCss}
-                      className={sortDirection === 'desc' ? 'down' : ''}
-                    />
-                  )}
-                </th>
-              );
-            })}
-          </tr>
+                    }
+                    : undefined
+                }
+              >
+                {strings[column as keyof Translation] as string}
+                {isActive && (
+                  <span
+                    css={tableChevronCss}
+                    className={sortDirection === 'desc' ? 'down' : ''}
+                  />
+                )}
+              </th>
+            );
+          })}
+        </tr>
         </thead>
         {!!inProgress.length && (
           <tbody css={tableInProgressCss}>
-            {showInProgress ? (
-              inProgress.map((slug, index) => <Row slug={slug} key={index} />)
-            ) : (
-              <tr>
-                <td colSpan={columns.length}>
-                  <button onClick={() => setShowInProgress(true)}>
-                    {inProgress.length === 1
-                      ? strings.in_progress_single
-                      : i18n(strings.in_progress_multiple, {
-                          count: inProgress.length,
-                        })}
-                  </button>
-                </td>
-              </tr>
-            )}
+          {showInProgress ? (
+            inProgress.map((slug, index) => <Row slug={slug} key={index} />)
+          ) : (
+            <tr>
+              <td colSpan={columns.length}>
+                <button onClick={() => setShowInProgress(true)}>
+                  {inProgress.length === 1
+                    ? strings.in_progress_single
+                    : i18n(strings.in_progress_multiple, {
+                      count: inProgress.length,
+                    })}
+                </button>
+              </td>
+            </tr>
+          )}
           </tbody>
         )}
         <InfiniteScroll

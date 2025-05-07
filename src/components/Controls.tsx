@@ -65,7 +65,7 @@ export default function Controls({
   //get available views
   const allViews = ['table', 'map'] as const;
   const views = allViews.filter(
-    view => view !== 'map' || (state.capabilities.coordinates && mapbox)
+    view => view !== 'map' || state.capabilities.coordinates
   );
 
   //whether to show the views segmented button
