@@ -3,6 +3,7 @@
 import react from '@vitejs/plugin-react';
 import { defineConfig } from 'vite';
 import cssInjectedByJsPlugin from 'vite-plugin-css-injected-by-js';
+import { visualizer } from 'rollup-plugin-visualizer';
 
 export default defineConfig({
   plugins: [
@@ -13,12 +14,18 @@ export default defineConfig({
       },
     }),
     cssInjectedByJsPlugin(),
+    visualizer({
+      open: false,
+      filename: 'bundle-stats.html',
+      gzipSize: true,
+      brotliSize: true,
+    }),
   ],
   publicDir: false, // Disable public folder copying to avoid conflicts
   build: {
     minify: 'terser',
     outDir: 'public',
-    chunkSizeWarningLimit: 600,
+    chunkSizeWarningLimit: 650,
     emptyOutDir: false, // Don't clear public dir (contains HTML files)
     cssCodeSplit: false,
     rollupOptions: {
