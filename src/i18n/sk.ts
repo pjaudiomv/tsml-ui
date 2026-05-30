@@ -3,6 +3,8 @@ import { getTypesForLanguage } from '@code4recovery/spec';
 export const sk: Translation = {
   add_to_calendar: 'Pridať do kalendára',
   address: 'Adresa / Platforma',
+  aggregator_location_prompt:
+    'Povoľte prístup k polohe alebo vyhľadajte adresu na nájdenie stretnutí vo vašom okolí.',
   appointment: 'Stretnutie',
   back_to_meetings: 'Späť na Stretnutia',
   calendar_ical: 'iCalendar',

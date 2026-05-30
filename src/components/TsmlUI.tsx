@@ -11,10 +11,13 @@ import {
   LocationProvider,
   SettingsProvider,
   useData,
+  useError,
   useInput,
   useLocation,
+  useSettings,
 } from '../hooks';
-import { globalCss } from '../styles';
+import { isAggregatorSource } from '../helpers';
+import { alertCss, globalCss } from '../styles';
 
 import { Alert, Controls, DynamicHeight, Loading, Map, Table, Title } from './';
 
@@ -41,12 +44,19 @@ export default function TsmlUI({
     };
   }, []);
 
+  const aggregator = isAggregatorSource(src);
+
   return (
     <ErrorProvider>
       <SettingsProvider userSettings={userSettings}>
         <InputProvider>
-          <LocationProvider>
-            <DataProvider google={google} src={src} timezone={timezone}>
+          <LocationProvider aggregator={aggregator}>
+            <DataProvider
+              aggregator={aggregator}
+              google={google}
+              src={src}
+              timezone={timezone}
+            >
               <FilterProvider>
                 <Global styles={globalCss} />
                 <DynamicHeight>
@@ -62,9 +72,17 @@ export default function TsmlUI({
 }
 
 export const Index = () => {
-  const { waitingForData } = useData();
+  const { aggregator, waitingForData } = useData();
+  const { error } = useError();
   const { input } = useInput();
-  const { waitingForLocation } = useLocation();
+  const { latitude, longitude, waitingForLocation } = useLocation();
+  const { strings } = useSettings();
+
+  // in aggregator mode, prompt for a location/address until we have coordinates
+  // to query with (e.g. when browser geolocation is denied or unavailable)
+  const showAggregatorPrompt =
+    aggregator && !error && (!latitude || !longitude);
+
   return waitingForData ? (
     <Loading />
   ) : (
@@ -76,7 +94,13 @@ export const Index = () => {
       ) : (
         <>
           <Alert />
-          {input.view === 'map' ? <Map /> : <Table />}
+          {showAggregatorPrompt ? (
+            <p css={alertCss}>{strings.aggregator_location_prompt}</p>
+          ) : input.view === 'map' ? (
+            <Map />
+          ) : (
+            <Table />
+          )}
         </>
       )}
     </>

@@ -3,6 +3,8 @@ import { getTypesForLanguage } from '@code4recovery/spec';
 export const th: Translation = {
   add_to_calendar: 'เพิ่มลงในปฏิทิน',
   address: 'ที่อยู่ / แพลตฟอร์ม',
+  aggregator_location_prompt:
+    'อนุญาตการเข้าถึงตำแหน่งที่ตั้งหรือค้นหาที่อยู่เพื่อค้นหาการประชุมใกล้คุณ',
   appointment: 'การนัดหมาย',
   back_to_meetings: 'กลับไปที่การประชุม',
   calendar_ical: 'iCalendar',

@@ -7,6 +7,7 @@ import { en, es, fr, ja, nl, pt, sk, sv, th } from '../i18n';
 
 // override these on your page with tsml_react_config
 export const defaults: TSMLReactConfig = {
+  aggregator_radius_default: 25, // initial radius (mi) for aggregator geo search
   cache: false,
   calendar_enabled: true,
   columns: ['time', 'distance', 'name', 'location_group', 'address', 'region'],

@@ -4,10 +4,11 @@ import {
   useCallback,
   useContext,
   useEffect,
+  useRef,
   useState,
 } from 'react';
 
-import { formatString, getDistance } from '../helpers';
+import { AGGREGATOR_MAX_RADIUS, formatString, getDistance } from '../helpers';
 import { Index, Meeting } from '../types';
 
 import { useError } from './error';
@@ -50,7 +51,10 @@ const LocationContext = createContext<LocationContextType>({
 
 export const useLocation = () => useContext(LocationContext);
 
-export const LocationProvider = ({ children }: PropsWithChildren) => {
+export const LocationProvider = ({
+  children,
+  aggregator,
+}: PropsWithChildren<{ aggregator?: boolean }>) => {
   const { setError } = useError();
   const { input } = useInput();
   const { settings, strings } = useSettings();
@@ -64,13 +68,21 @@ export const LocationProvider = ({ children }: PropsWithChildren) => {
   const [locationState, setLocationState] =
     useState<LocationState>(defaultLocationState);
   const [geocodedSearch, setGeocodedSearch] = useState<string>();
+  const attemptedInitialGeolocation = useRef(false);
 
   // Handle geocoding or geolocation requests
   useEffect(() => {
     // Only proceed if we're in location or me mode
     if (input.mode !== 'location' && input.mode !== 'me') {
-      setLocationState({ waitingForLocation: false });
-      setGeocodedSearch(undefined);
+      // in aggregator mode the resting "search" state keeps the coordinates
+      // obtained from geolocation/geocode so client-side text search filters
+      // the already-fetched nearby meetings instead of clearing them
+      if (aggregator) {
+        setLocationState(prev => ({ ...prev, waitingForLocation: false }));
+      } else {
+        setLocationState({ waitingForLocation: false });
+        setGeocodedSearch(undefined);
+      }
       return;
     }
 
@@ -84,8 +96,16 @@ export const LocationProvider = ({ children }: PropsWithChildren) => {
       if (geocodedSearch === input.search) return;
 
       // Wait for bounds to be available before geocoding
-      // bounds will be set by DataProvider after meeting data is loaded
-      if (!bounds.north && !bounds.south && !bounds.east && !bounds.west) {
+      // bounds will be set by DataProvider after meeting data is loaded.
+      // in aggregator mode the first geocode happens before any data exists,
+      // so skip the wait (the geocoder simply isn't bounds-biased yet)
+      if (
+        !aggregator &&
+        !bounds.north &&
+        !bounds.south &&
+        !bounds.east &&
+        !bounds.west
+      ) {
         return;
       }
 
@@ -155,7 +175,33 @@ export const LocationProvider = ({ children }: PropsWithChildren) => {
     } else {
       setLocationState({ waitingForLocation: false });
     }
-  }, [input.mode, input.search, bounds.north]);
+  }, [input.mode, input.search, bounds.north, aggregator]);
+
+  // in aggregator mode, attempt browser geolocation once on load to seed the
+  // initial geo query. on denial/failure we silently leave coordinates unset
+  // so the UI falls back to the address-search prompt.
+  useEffect(() => {
+    if (!aggregator || attemptedInitialGeolocation.current) return;
+    attemptedInitialGeolocation.current = true;
+    // only seed from geolocation in the default resting mode; if the page
+    // loaded with an explicit location/me search, the main effect handles it
+    if (input.mode !== 'search') return;
+    if (!navigator.geolocation) return;
+    setLocationState({ waitingForLocation: true });
+    navigator.geolocation.getCurrentPosition(
+      position => {
+        setLocationState({
+          latitude: position.coords.latitude,
+          longitude: position.coords.longitude,
+          waitingForLocation: false,
+        });
+      },
+      () => {
+        setLocationState({ waitingForLocation: false });
+      },
+      { timeout: 5000 }
+    );
+  }, [aggregator, input.mode]);
 
   const calculateDistances = useCallback(
     (meetings: { [index: string]: Meeting }) => {
@@ -165,8 +211,16 @@ export const LocationProvider = ({ children }: PropsWithChildren) => {
         return { meetings, distanceIndex: [], hasDistance: false };
       }
 
+      // in aggregator mode the query radius is capped, so don't offer distance
+      // options the API can't honor
+      const distanceOptions = aggregator
+        ? settings.distance_options.filter(
+            option => option <= AGGREGATOR_MAX_RADIUS
+          )
+        : settings.distance_options;
+
       const distances = Object.fromEntries(
-        settings.distance_options.map(option => [option, []])
+        distanceOptions.map(option => [option, []])
       );
 
       const updatedMeetings = { ...meetings };
@@ -181,7 +235,7 @@ export const LocationProvider = ({ children }: PropsWithChildren) => {
           );
         }
 
-        for (const option of settings.distance_options) {
+        for (const option of distanceOptions) {
           if (meeting.distance && meeting.distance <= option) {
             (distances[option] as string[]).push(meeting.slug);
           }
@@ -203,6 +257,7 @@ export const LocationProvider = ({ children }: PropsWithChildren) => {
       };
     },
     [
+      aggregator,
       locationState.latitude,
       locationState.longitude,
       settings.distance_options,

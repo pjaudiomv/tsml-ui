@@ -9,16 +9,19 @@ import {
 import { useParams } from 'react-router-dom';
 
 import {
+  fetchAggregatorData,
   isGoogleSheetData,
   loadMeetingData,
   translateGoogleSheet,
 } from '../helpers';
 import { Index, JSONData, Meeting } from '../types';
 import { useError } from './error';
+import { useInput } from './input';
 import { useLocation } from './location';
 import { useSettings } from './settings';
 
 export type Data = {
+  aggregator: boolean;
   capabilities: {
     coordinates: boolean;
     distance: boolean;
@@ -44,6 +47,7 @@ export type Data = {
 };
 
 const defaultData: Data = {
+  aggregator: false,
   capabilities: {
     coordinates: false,
     distance: false,
@@ -74,15 +78,26 @@ export const useData = () => useContext(DataContext);
 
 export const DataProvider = ({
   children,
+  aggregator,
   google,
   src,
   timezone,
-}: PropsWithChildren<{ google?: string; src?: string; timezone?: string }>) => {
+}: PropsWithChildren<{
+  aggregator?: boolean;
+  google?: string;
+  src?: string;
+  timezone?: string;
+}>) => {
   const [data, setData] = useState<Data>(defaultData);
   const { setError } = useError();
   const { slug } = useParams();
-  const { setBounds, calculateDistances } = useLocation();
+  const { latitude, longitude, setBounds, calculateDistances } = useLocation();
+  const { input } = useInput();
   const { settings, strings } = useSettings();
+
+  // radius for the aggregator geo query — the distance dropdown when set,
+  // otherwise the configured default (the API caps it at 50)
+  const radius = input.distance ?? settings.aggregator_radius_default;
 
   useEffect(() => {
     if (timezone) {
@@ -100,6 +115,14 @@ export const DataProvider = ({
 
     if (!sources.length) {
       throw new Error('a data source must be specified');
+    }
+
+    // aggregator mode is location-first: the fetch is driven by the geo effect
+    // below once coordinates are available, not on mount. clear the initial
+    // loading state so the UI can prompt for location / address.
+    if (aggregator) {
+      setData(prevData => ({ ...prevData, waitingForData: false }));
+      return;
     }
 
     const sheets: (string | undefined)[] = [];
@@ -162,6 +185,7 @@ export const DataProvider = ({
         }
 
         setData({
+          aggregator: false,
           capabilities,
           indexes,
           meetings,
@@ -174,6 +198,49 @@ export const DataProvider = ({
         setData(prevData => ({ ...prevData, waitingForData: false }));
       });
   }, []);
+
+  // aggregator mode: (re)fetch meetings near the current coordinates whenever
+  // the location (initial geolocation, address geocode, or "near me") or the
+  // radius changes. deliberately NOT keyed on bounds/data to avoid a refetch
+  // loop (loadMeetingData -> setBounds).
+  useEffect(() => {
+    if (!aggregator || !latitude || !longitude || !src) {
+      return;
+    }
+
+    setData(prevData => ({ ...prevData, waitingForData: true }));
+
+    fetchAggregatorData({ src, latitude, longitude, radius })
+      .then(json => {
+        // loadMeetingData mutates the capabilities object it receives, so hand
+        // it a fresh clone on every refetch to avoid accumulating stale flags
+        const { bounds, capabilities, indexes, meetings, slugs } =
+          loadMeetingData(
+            json,
+            { ...defaultData.capabilities },
+            settings,
+            strings,
+            timezone
+          );
+
+        if (bounds) {
+          setBounds(bounds);
+        }
+
+        setData({
+          aggregator: true,
+          capabilities,
+          indexes,
+          meetings,
+          slugs,
+          waitingForData: false,
+        });
+      })
+      .catch(error => {
+        setError(`Loading error: ${error}`);
+        setData(prevData => ({ ...prevData, waitingForData: false }));
+      });
+  }, [aggregator, latitude, longitude, radius]);
 
   // Update data when location changes to recalculate distances
   useEffect(() => {
@@ -201,5 +268,9 @@ export const DataProvider = ({
     }));
   }, [calculateDistances, data.waitingForData]);
 
-  return <DataContext.Provider value={data}>{children}</DataContext.Provider>;
+  return (
+    <DataContext.Provider value={{ ...data, aggregator: !!aggregator }}>
+      {children}
+    </DataContext.Provider>
+  );
 };

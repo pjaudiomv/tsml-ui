@@ -3,6 +3,8 @@ import { getTypesForLanguage } from '@code4recovery/spec';
 export const nl: Translation = {
   add_to_calendar: 'Toevoegen aan agenda',
   address: 'Addres',
+  aggregator_location_prompt:
+    'Sta locatietoegang toe of zoek een adres om bijeenkomsten bij jou in de buurt te vinden.',
   appointment: 'Afspraak',
   back_to_meetings: 'Terug naar Meetings',
   calendar_ical: 'iCalendar',

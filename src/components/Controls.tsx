@@ -19,7 +19,7 @@ import {
 import Dropdown from './Dropdown';
 
 export default function Controls() {
-  const { capabilities, meetings, slugs } = useData();
+  const { aggregator, capabilities, meetings, slugs } = useData();
   const navigate = useNavigate();
   const { settings, strings } = useSettings();
   const [dropdown, setDropdown] = useState<string>();
@@ -27,12 +27,19 @@ export default function Controls() {
   const [search, setSearch] = useState(input.search);
   const searchInput = useRef<HTMLInputElement>(null);
 
-  // get available search options based on capabilities
+  // get available search options based on capabilities. in aggregator mode the
+  // location/near-me modes drive the geo query and must be available before any
+  // meetings (and thus coordinate capabilities) have been fetched.
   const modes = settings.modes
-    .filter(mode => mode !== 'location' || capabilities.coordinates)
     .filter(
-      mode =>
-        mode !== 'me' || (capabilities.coordinates && capabilities.geolocation)
+      mode => mode !== 'location' || aggregator || capabilities.coordinates
+    )
+    .filter(mode =>
+      mode !== 'me'
+        ? true
+        : aggregator
+          ? !!navigator.geolocation
+          : capabilities.coordinates && capabilities.geolocation
     );
 
   // get available dropdowns
@@ -142,7 +149,7 @@ export default function Controls() {
     navigate(formatUrl(newInput, settings));
   };
 
-  return !slugs.length ? null : (
+  return !slugs.length && !aggregator ? null : (
     <div css={controlsCss}>
       <form onSubmit={locationSearch} css={dropdownCss}>
         <fieldset role="group">

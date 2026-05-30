@@ -3,6 +3,8 @@ import { getTypesForLanguage } from '@code4recovery/spec';
 export const ja: Translation = {
   add_to_calendar: 'カレンダーに追加',
   address: '住所・プラットフォーム',
+  aggregator_location_prompt:
+    '位置情報の利用を許可するか、住所を検索して近くのミーティングを見つけてください。',
   appointment: '予定',
   back_to_meetings: 'ミーティング一覧へ戻る',
   calendar_ical: 'iCalendar',

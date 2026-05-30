@@ -9,6 +9,7 @@ type Mode = 'search' | 'location' | 'me';
 type View = 'table' | 'map';
 
 interface TSMLReactConfig {
+  aggregator_radius_default: number;
   cache: boolean;
   calendar_enabled: boolean;
   columns: string[];

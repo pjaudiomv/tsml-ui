@@ -1,6 +1,7 @@
 export interface Translation {
   add_to_calendar: string;
   address: string;
+  aggregator_location_prompt: string;
   appointment: string;
   back_to_meetings: string;
   calendar_ical: string;

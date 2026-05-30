@@ -3,6 +3,8 @@ import { getTypesForLanguage } from '@code4recovery/spec';
 export const en: Translation = {
   add_to_calendar: 'Add to Calendar',
   address: 'Address / Platform',
+  aggregator_location_prompt:
+    'Allow location access or search an address to find meetings near you.',
   appointment: 'Appointment',
   back_to_meetings: 'Back to Meetings',
   calendar_ical: 'iCalendar',
