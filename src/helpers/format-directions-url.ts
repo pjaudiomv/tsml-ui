@@ -4,12 +4,7 @@ import type { Meeting } from '../types';
 
 // create a link for directions
 export function formatDirectionsUrl(
-  {
-    formatted_address,
-    latitude,
-    longitude,
-    location,
-  }: Meeting,
+  { formatted_address, latitude, longitude, location }: Meeting,
   useLocationName?: boolean
 ) {
   // prefer venue name + address so map apps label the destination instead of reverse-geocoding bare coordinates
