@@ -140,7 +140,10 @@ export default function Meeting() {
 
   // directions URL link
   const directionsUrl = meeting.isInPerson
-    ? formatDirectionsUrl(meeting)
+    ? formatDirectionsUrl(
+        meeting,
+        settings.use_location_name_and_address_for_directions
+      )
     : undefined;
 
   // set page title

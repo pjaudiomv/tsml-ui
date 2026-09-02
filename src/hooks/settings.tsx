@@ -106,6 +106,7 @@ export const defaults: TSMLReactConfig = {
     th,
   },
   times: ['morning', 'midday', 'evening', 'night', 'appointment'],
+  use_location_name_and_address_for_directions: false,
   views: ['table', 'map'],
   weekdays: [
     'sunday',
