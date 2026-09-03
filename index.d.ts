@@ -59,6 +59,7 @@ interface TSMLReactConfig {
     [lang in Lang]: Translation;
   };
   times: Array<'morning' | 'midday' | 'evening' | 'night' | 'appointment'>;
+  use_location_name_and_address_for_directions: boolean;
   views: Array<View>;
   weekdays: string[];
 }

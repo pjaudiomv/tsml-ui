@@ -54,7 +54,10 @@ export default function Map() {
         // create a new pin
         if (!locations[coords]) {
           locations[coords] = {
-            directions_url: formatDirectionsUrl(meeting),
+            directions_url: formatDirectionsUrl(
+              meeting,
+              settings.use_location_name_and_address_for_directions
+            ),
             formatted_address: meeting.formatted_address,
             key: coords,
             latitude: meeting.latitude,

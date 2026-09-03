@@ -3,15 +3,21 @@ import { iOS } from './user-agent';
 import type { Meeting } from '../types';
 
 // create a link for directions
-export function formatDirectionsUrl({
-  formatted_address,
-  latitude,
-  longitude,
-}: Meeting) {
+export function formatDirectionsUrl(
+  { formatted_address, latitude, longitude, location }: Meeting,
+  useLocationName?: boolean
+) {
+  // prefer venue name + address so map apps label the destination instead of reverse-geocoding bare coordinates
+  const namedDestination = useLocationName
+    ? [location, formatted_address].filter(Boolean).join(', ')
+    : undefined;
+  const hasCoordinates = latitude !== undefined && longitude !== undefined;
+
   if (iOS()) {
     // iOS devices use Apple - https://developer.apple.com/library/archive/featuredarticles/iPhoneURLScheme_Reference/MapLinks/MapLinks.html
-    const params: { daddr: string; q?: string } =
-      latitude && longitude
+    const params: { daddr: string; q?: string } = namedDestination
+      ? { daddr: namedDestination }
+      : hasCoordinates
         ? { daddr: [latitude, longitude].join(), q: formatted_address }
         : { daddr: formatted_address };
     return `http://maps.apple.com/?${new URLSearchParams(params)}`;
@@ -21,6 +27,7 @@ export function formatDirectionsUrl({
   return `https://www.google.com/maps/dir/?${new URLSearchParams({
     api: '1',
     destination:
-      latitude && longitude ? [latitude, longitude].join() : formatted_address,
+      namedDestination ||
+      (hasCoordinates ? [latitude, longitude].join() : formatted_address),
   })}`;
 }
